@@ -1,0 +1,14 @@
+{% extends "auctions/layout.html" %}
+
+{% block body %}
+    <h2>Active Listings</h2>
+
+    {% for listing in listings %}
+        <h5>{{ listing.title }}</h5>
+        {% if listing.image_url %}
+        <img src="{{ listing.image_url }}" alt="Listing picture">
+        {% endif %}
+        <p>{{ image.description }}</p>
+        <p>Highest bid: {{ max_bids }}</p>        
+    {% endfor %}
+{% endblock %}
