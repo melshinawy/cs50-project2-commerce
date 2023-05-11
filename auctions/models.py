@@ -23,8 +23,14 @@ class Bid(models.Model):
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE)
     bid = models.PositiveIntegerField()
 
+    def __str__(self):
+        return f'${self.bid} on {self.listing} by  {self.user}'
+
 # Table containing comments
 class Comment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE)
     comment = models.CharField(max_length=500)
+
+class WatchList(models.Model):
+    pass

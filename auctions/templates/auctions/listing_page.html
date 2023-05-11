@@ -1,0 +1,22 @@
+{% extends "auctions/layout.html" %}
+
+{% block title %}
+    {{ listing.title }} | Auctions
+{% endblock %}
+
+{% block body %}
+    <h5>{{ listing.title }}</h5>
+    {% if user_id %}
+        <ul class="nav">
+            <li>Add to Watchlist</li>
+        </ul>
+    {% endif %}   
+
+    {% if listing.image_url %}
+        <img src="{{ listing.image_url }}" alt="Listing picture">
+    {% endif %}
+
+    <p>{{ listing.description }}</p>
+    <p>Highest bid: ${{ max_bid }}</p>
+    
+{% endblock %}

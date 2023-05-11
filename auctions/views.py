@@ -10,12 +10,33 @@ from .models import *
 
 
 def index(request):
+    # Create QuerySets for the active listings and maximum bid 
     active_listings = Listing.objects.exclude(active=False).all()
-    max_bids = Bid.objects.values('listing').annotate(Max('bid')).order_by('listing')
+    max_bids = Bid.objects.values('listing').annotate(Max('bid'))
+
+    # Create a dict to map active listings with highest bid
+    listings_max_bids = {}
+
+    for listing in active_listings:
+        listings_max_bids[listing] = max_bids.get(listing=listing)['bid__max']
+
     return render(request, "auctions/index.html",{
-        'listings': active_listings,
-        'max_bids': max_bids
+        'listings': listings_max_bids
     })
+
+def listing_page(request, listing_id):
+    if request.method == 'GET':
+        user_id = request.user.id
+        context = {
+            'listing': Listing.objects.get(pk=listing_id),
+            'max_bid': Bid.objects.filter(listing=listing_id).aggregate(Max('bid'))['bid__max'],
+            'user_id': user_id
+        }
+
+        if user_id:
+            context['bid_form'] = BidForm()
+
+    return render(request, "auctions/listing_page.html", context)
 
 @login_required
 @transaction.atomic # Setting up a transaction for the user to add to the Listing tabel and the initial bid to the Bid table. If either fails the other is not commited
@@ -50,7 +71,6 @@ def create_listing(request):
             'listing_form': ListingForm(),
             'bid_form': BidForm()
         })
-
 
 def login_view(request):
     if request.method == "POST":

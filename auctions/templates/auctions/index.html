@@ -3,12 +3,16 @@
 {% block body %}
     <h2>Active Listings</h2>
 
-    {% for listing in listings %}
-        <h5>{{ listing.title }}</h5>
+    {% for listing, max_bid in listings.items %}
+
+        <h5><a href="{% url 'listing_page' listing.id %}">{{ listing.title }}</a></h5>
+
         {% if listing.image_url %}
-        <img src="{{ listing.image_url }}" alt="Listing picture">
+            <img src="{{ listing.image_url }}" alt="Listing picture">
         {% endif %}
-        <p>{{ image.description }}</p>
-        <p>Highest bid: {{ max_bids }}</p>        
+
+        <p>{{ listing.description }}</p>
+        <p>Highest bid: ${{ max_bid }}</p>  
+
     {% endfor %}
 {% endblock %}
