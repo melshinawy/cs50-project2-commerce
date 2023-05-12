@@ -24,6 +24,15 @@ def index(request):
         'listings': listings_max_bids
     })
 
+def categories(request):
+    categories_list = Listing.objects.exclude(category__isnull=True).values('category').distinct()
+    return render(request, "auctions/categories.html", {
+        'categories': categories_list
+    })
+
+def category_name(request, category):
+    pass
+
 def listing_page(request, listing_id):
     if request.method == 'GET':
         user_id = request.user.id
@@ -47,6 +56,7 @@ def create_listing(request):
         # Gather information from the Listing and Bid forms as well as store the user object
         listing_f = ListingForm(request.POST)
         bid_f = BidForm(request.POST)
+        category_f = CategoryForm(request.POST)
         user = User.objects.get(pk=request.user.id)
 
         # Verify that the forms are valid
@@ -54,6 +64,12 @@ def create_listing(request):
             # Add information from the ListingForm then add the user
             new_listing = listing_f.save(commit=False)
             new_listing.user = user
+
+            if category_f.is_valid():
+                new_category = category_f.save(commit=False)
+                new_category.save()
+                new_listing.category = new_category
+
             new_listing.save()
 
             # Add bid information to the listing
@@ -61,6 +77,7 @@ def create_listing(request):
             new_bid.listing = new_listing
             new_bid.user = user
             new_bid.save()
+
             # Redirect the user to the index page after a successful listing creation
             return HttpResponseRedirect(reverse('index'))
         else:
@@ -69,7 +86,8 @@ def create_listing(request):
     else:
         return render(request, 'auctions/create_listing.html', {
             'listing_form': ListingForm(),
-            'bid_form': BidForm()
+            'bid_form': BidForm(),
+            'category_form': CategoryForm()
         })
 
 def login_view(request):
