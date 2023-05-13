@@ -6,11 +6,7 @@
 
 {% block body %}
     <h5>{{ listing.title }}</h5>
-    {% if user_id %}
-        <ul class="nav">
-            <li>Add to Watchlist</li>
-        </ul>
-    {% endif %}   
+        <a href="{% url 'add_to_watchlist' listing.id %}"><h6>{{ manipulate_listing }}</h6></a>
 
     {% if listing.image_url %}
         <img src="{{ listing.image_url }}" alt="Listing picture">

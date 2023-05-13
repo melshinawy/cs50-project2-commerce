@@ -6,7 +6,10 @@ class User(AbstractUser):
     pass
 
 class Category(models.Model):
-    category = models.CharField(max_length=32) 
+    name = models.CharField(max_length=32)
+
+    def __str__(self):
+        return f'{self.name}'
 
 # Table containing all the listings
 class Listing(models.Model):
@@ -14,7 +17,7 @@ class Listing(models.Model):
     title = models.CharField(max_length=64)
     description = models.CharField(max_length=800)
     image_url = models.URLField(blank=True)
-    category = models.ForeignKey(Category, blank=True, null=True, on_delete=models.SET_NULL)
+    category_id = models.ForeignKey(Category, blank=True, null=True, on_delete=models.SET_NULL)
     active = models.BooleanField(default=True)
     watch_list = models.ManyToManyField(User, blank=True, related_name='watch_list')
     

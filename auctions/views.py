@@ -21,31 +21,62 @@ def index(request):
         listings_max_bids[listing] = max_bids.get(listing=listing)['bid__max']
 
     return render(request, "auctions/index.html",{
-        'listings': listings_max_bids
+        'listings': listings_max_bids,
     })
 
 def categories(request):
-    categories_list = Listing.objects.exclude(category__isnull=True).values('category').distinct()
+    all_categories = Category.objects.all()
     return render(request, "auctions/categories.html", {
-        'categories': categories_list
+        'categories': all_categories
     })
 
-def category_name(request, category):
-    pass
+def category_name(request, category_id):
+
+    category = Category.objects.get(pk=category_id)
+    listings = Listing.objects.filter(category_id=category)
+    max_bids = Bid.objects.values('listing').annotate(Max('bid'))
+
+    # Create a dict to map active listings with highest bid
+    listings_max_bids = {}
+
+    for listing in listings:
+        listings_max_bids[listing] = max_bids.get(listing=listing)['bid__max']
+    
+    return render(request, 'auctions/category_name.html', {
+        'title': category.name,
+        'listings': listings_max_bids
+    })
 
 def listing_page(request, listing_id):
     if request.method == 'GET':
         user_id = request.user.id
+        listing = Listing.objects.get(pk=listing_id)
+        
+        manipulate_listing = None
+        
+        if listing.user == user_id:
+            manipulate_listing = 'Close auction'
+        
         context = {
             'listing': Listing.objects.get(pk=listing_id),
             'max_bid': Bid.objects.filter(listing=listing_id).aggregate(Max('bid'))['bid__max'],
-            'user_id': user_id
+            'user_id': user_id,
+            'manipulate_listing': manipulate_listing
         }
 
         if user_id:
             context['bid_form'] = BidForm()
 
     return render(request, "auctions/listing_page.html", context)
+
+@login_required
+def add_to_watchlist(request, listing_id):
+    listing = Listing.objects.get(pk=listing_id)
+    listing.watch_list.add(User.objects.get(pk=request.user.id))
+    listing.save()
+
+    return HttpResponseRedirect(reverse('listing_page', args=(listing_id,)))
+
 
 @login_required
 @transaction.atomic # Setting up a transaction for the user to add to the Listing tabel and the initial bid to the Bid table. If either fails the other is not commited
@@ -68,7 +99,7 @@ def create_listing(request):
             if category_f.is_valid():
                 new_category = category_f.save(commit=False)
                 new_category.save()
-                new_listing.category = new_category
+                new_listing.category_id = new_category
 
             new_listing.save()
 
