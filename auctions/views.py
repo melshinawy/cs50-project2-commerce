@@ -1,27 +1,24 @@
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError, transaction
-from django.db.models import Max
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
+from django.db.models import Max
 from django.urls import reverse
 from .forms import *
 from .models import *
+from .helper_functions import get_max_bids
 
 
 def index(request):
     # Create QuerySets for the active listings and maximum bid 
     active_listings = Listing.objects.exclude(active=False).all()
-    max_bids = Bid.objects.values('listing').annotate(Max('bid'))
 
     # Create a dict to map active listings with highest bid
-    listings_max_bids = {}
-
-    for listing in active_listings:
-        listings_max_bids[listing] = max_bids.get(listing=listing)['bid__max']
+    listings_max_bids = get_max_bids(active_listings)
 
     return render(request, "auctions/index.html",{
-        'listings': listings_max_bids,
+        'listings': listings_max_bids
     })
 
 def categories(request):
@@ -33,29 +30,41 @@ def categories(request):
 def category_name(request, category_id):
 
     category = Category.objects.get(pk=category_id)
-    listings = Listing.objects.filter(category_id=category)
-    max_bids = Bid.objects.values('listing').annotate(Max('bid'))
+    listings = Listing.objects.filter(category_id=category.id)
+    listings = listings.filter(active=True)
 
     # Create a dict to map active listings with highest bid
-    listings_max_bids = {}
-
-    for listing in listings:
-        listings_max_bids[listing] = max_bids.get(listing=listing)['bid__max']
+    listings_max_bids = get_max_bids(listings)
     
     return render(request, 'auctions/category_name.html', {
         'title': category.name,
         'listings': listings_max_bids
     })
 
+@login_required
+def watchlist(request):
+    user = User.objects.get(pk=request.user.id)
+    watchlist = user.watch_list.all()
+    watchlist_max_bids = get_max_bids(watchlist)
+    return render(request, 'auctions/watchlist.html', {
+        'watchlist': watchlist_max_bids
+    })
+
 def listing_page(request, listing_id):
     if request.method == 'GET':
         user_id = request.user.id
+
+        user = User.objects.get(pk=request.user.id)
         listing = Listing.objects.get(pk=listing_id)
         
         manipulate_listing = None
         
-        if listing.user == user_id:
+        if listing.user.id == user.id:
             manipulate_listing = 'Close auction'
+        elif listing in user.watch_list.all():
+            manipulate_listing = 'Remove from watchlist'
+        else:
+            manipulate_listing = 'Add to watchlist'
         
         context = {
             'listing': Listing.objects.get(pk=listing_id),
@@ -70,11 +79,18 @@ def listing_page(request, listing_id):
     return render(request, "auctions/listing_page.html", context)
 
 @login_required
-def add_to_watchlist(request, listing_id):
-    listing = Listing.objects.get(pk=listing_id)
-    listing.watch_list.add(User.objects.get(pk=request.user.id))
-    listing.save()
+def add_to_watchlist(request, listing_id, listing_manipulation):
 
+    listing = Listing.objects.get(pk=listing_id)
+    if listing_manipulation == 'Add to watchlist':
+        listing.watch_list.add(User.objects.get(pk=request.user.id))
+        listing.save()
+    elif listing_manipulation == 'Remove from watchlist':
+        listing.watch_list.remove(User.objects.get(pk=request.user.id))
+    else:
+        listing.active = False
+        listing.save()
+    
     return HttpResponseRedirect(reverse('listing_page', args=(listing_id,)))
 
 

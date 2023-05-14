@@ -6,7 +6,7 @@
 
 {% block body %}
     <h5>{{ listing.title }}</h5>
-        <a href="{% url 'add_to_watchlist' listing.id %}"><h6>{{ manipulate_listing }}</h6></a>
+        <a href="{% url 'add_to_watchlist' listing.id manipulate_listing %}"><h6>{{ manipulate_listing }}</h6></a>
 
     {% if listing.image_url %}
         <img src="{{ listing.image_url }}" alt="Listing picture">

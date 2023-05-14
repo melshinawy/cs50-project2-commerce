@@ -1,0 +1,19 @@
+{% extends "auctions/layout.html" %}
+
+{% block title %}Auctions | Watchlist{% endblock %}
+
+{% block body %}
+    <h5>Watchlist</h5>
+    {% for listing, max_bid in watchlist.items %}
+
+        <h5><a href="{% url 'listing_page' listing.id %}">{{ listing.title }}</a></h5>
+
+        {% if listing.image_url %}
+            <img src="{{ listing.image_url }}" alt="Listing picture">
+        {% endif %}
+
+        <p>{{ listing.description }}</p>
+        <p>Highest bid: ${{ max_bid }}</p>  
+
+    {% endfor %}
+{% endblock %}
