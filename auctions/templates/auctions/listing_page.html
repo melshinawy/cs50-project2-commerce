@@ -6,7 +6,7 @@
 
 {% block body %}
     <h5>{{ listing.title }}</h5>
-        <a href="{% url 'add_to_watchlist' listing.id manipulate_listing %}"><h6>{{ manipulate_listing }}</h6></a>
+        <a href="{% url 'add_to_watchlist' listing.id %}"><h6>{{ listing_manipulation }}</h6></a>
 
     {% if listing.image_url %}
         <img src="{{ listing.image_url }}" alt="Listing picture">
@@ -14,5 +14,14 @@
 
     <p>{{ listing.description }}</p>
     <p>Highest bid: ${{ max_bid }}</p>
+
+    {% if bid_form %}
+    <form action="{% url 'listing_page' listing.id %}" method="post">
+        {% csrf_token %}
+        
+        {{ bid_form.bid }}
+        <input class="btn btn-primary" type="submit" value="Place Bid">
+    </form>
+    {% endif %}
     
 {% endblock %}

@@ -51,32 +51,40 @@ def watchlist(request):
     })
 
 def listing_page(request, listing_id):
+    listing = Listing.objects.get(pk=listing_id)
+    user_id = request.user.id
     if request.method == 'GET':
-        user_id = request.user.id
-
-        user = User.objects.get(pk=request.user.id)
-        listing = Listing.objects.get(pk=listing_id)
-        
-        manipulate_listing = None
-        
-        if listing.user.id == user.id:
-            manipulate_listing = 'Close auction'
-        elif listing in user.watch_list.all():
-            manipulate_listing = 'Remove from watchlist'
-        else:
-            manipulate_listing = 'Add to watchlist'
-        
         context = {
-            'listing': Listing.objects.get(pk=listing_id),
-            'max_bid': Bid.objects.filter(listing=listing_id).aggregate(Max('bid'))['bid__max'],
-            'user_id': user_id,
-            'manipulate_listing': manipulate_listing
-        }
+                'listing': Listing.objects.get(pk=listing_id),
+                'max_bid': Bid.objects.filter(listing=listing_id).aggregate(Max('bid'))['bid__max'],
+                'user_id': user_id,
+            }
 
         if user_id:
-            context['bid_form'] = BidForm()
+            user = User.objects.get(pk=request.user.id)
 
-    return render(request, "auctions/listing_page.html", context)
+            if listing.user.id == user.id:
+                listing_manipulation = 'Close auction'
+            elif listing in user.watch_list.all():
+                listing_manipulation = 'Remove from watchlist'
+            else:
+                listing_manipulation = 'Add to watchlist'
+            
+            context['listing_manipulation'] = listing_manipulation
+
+        if user_id and listing.active and (listing.user != user):
+            context['bid_form'] = BidForm()
+    
+        return render(request, "auctions/listing_page.html", context)
+
+    else:
+        bid_f = BidForm(request.POST)
+        new_bid = bid_f.save(commit=False)
+        new_bid.listing = listing
+        new_bid.user = User.objects.get(pk=user_id)
+        new_bid.save()
+
+        return HttpResponseRedirect(reverse('listing_page', args=(listing_id,)))
 
 @login_required
 def add_to_watchlist(request, listing_id, listing_manipulation):
@@ -113,7 +121,7 @@ def create_listing(request):
             new_listing.user = user
 
             if category_f.is_valid():
-                new_category = category_f.save(commit=False)
+                new_category, created = Category.objects.get_or_create(name=category_f.cleaned_data['name'])
                 new_category.save()
                 new_listing.category_id = new_category
 

@@ -2,17 +2,20 @@
 
 {% block body %}
     <h2>Active Listings</h2>
-
-    {% for listing, max_bid in listings.items %}
-
-        <h5><a href="{% url 'listing_page' listing.id %}">{{ listing.title }}</a></h5>
-
-        {% if listing.image_url %}
-            <img src="{{ listing.image_url }}" alt="Listing picture">
-        {% endif %}
-
-        <p>{{ listing.description }}</p>
-        <p>Highest bid: ${{ max_bid }}</p>  
-
-    {% endfor %}
+    
+        <div class="card-group">
+            <div class="row">               
+            {% for listing, max_bid in listings.items %}
+                <div class="card w-25">
+                    <img src="{{ listing.image_url }}" class="card-img-top" alt="{{ listing.title }}">
+                    <div class="card-body">
+                        <h5 class="card-title"><a href="{% url 'listing_page' listing.id %}">{{ listing.title }}</a></h5>
+                        <p class="card-text">{{ listing.description }}</p>
+                    </div>
+                        <small class="text-body-secondary" style="text-align: right;">Current price: ${{ max_bid }}</small>
+                </div>
+            {% endfor %}
+        
+    </div>
+        </div>
 {% endblock %}

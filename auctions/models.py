@@ -16,7 +16,7 @@ class Listing(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=64)
     description = models.CharField(max_length=800)
-    image_url = models.URLField(blank=True)
+    image_url = models.URLField(blank=True, default='https://st4.depositphotos.com/14953852/24787/v/450/depositphotos_247872612-stock-illustration-no-image-available-icon-vector.jpg')
     category_id = models.ForeignKey(Category, blank=True, null=True, on_delete=models.SET_NULL)
     active = models.BooleanField(default=True)
     watch_list = models.ManyToManyField(User, blank=True, related_name='watch_list')
