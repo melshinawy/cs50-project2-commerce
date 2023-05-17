@@ -23,7 +23,7 @@ class BidForm(forms.ModelForm):
         model = Bid
         fields = ['bid']
         widgets = {
-            'bid': forms.NumberInput(attrs={'placeholder': 'Initial Bid', 'size': '8', 'type': 'number'})
+            'bid': forms.NumberInput(attrs={'placeholder': 'Initial bid', 'size': '8'})
         }
 
 class CategoryForm(forms.ModelForm):
@@ -32,4 +32,12 @@ class CategoryForm(forms.ModelForm):
         fields = ['name']
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'Category'}),
+        }
+
+class CommentForm(forms.ModelForm):
+    class Meta:
+        model = Comment
+        fields = ['comment']
+        widgets = {
+            'comment': forms.Textarea(attrs={'placeholder': 'Add comment'}),
         }

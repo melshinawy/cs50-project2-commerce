@@ -3,7 +3,7 @@
 {% block title %}Categories | Auctions{% endblock %}
 
 {% block body %}
-    <h5>Categories:</h5>
+    <h2>Categories:</h2>
     <ul>
         {% for category in categories %}
             <li><a href="{% url 'category_name' category.id%}">{{ category.name }}</a></li>
