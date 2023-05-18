@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block body %}
-    {% if user.id %}
+    {% if user.id and listing.active %}
         <h6><a href="{% url 'add_to_watchlist' listing.id listing_manipulation %}">
         {% if listing_manipulation == 'Add to watchlist' %}
             <span class="badge bg-success">{{ listing_manipulation }}</span>
@@ -16,7 +16,9 @@
         {% endif %}
 </a></h6>
     {% endif %}
-  <h2>The winner is....{{ listing.winner }}</h2>
+    {% if not listing.active and listing.winner == user %}
+      <h5>You won this auction!</h5>
+    {% endif %}
 <div class="card mb-1">
     <div class="row">
       <div class="col">
@@ -42,8 +44,8 @@
         {% csrf_token %}
         <div class="form-floating mb-3">
             {{ bid_form.bid }}
+            <input class="btn btn-primary" type="submit" value="Place Bid">
         </div>
-        <input class="btn btn-primary" type="submit" value="Place Bid">
     </form>
     {% endif %}
     <h4>Comments:</h4>
@@ -53,7 +55,7 @@
 
         {{ comment_form.comment }}<br/>
         <input class="btn btn-primary" type="submit" value="Add Comment">
-    </form>
+    </form><br>
     {% endif %}
     
     {% for comment in comments reversed %}
@@ -64,7 +66,7 @@
         <div class="card-body">
           <blockquote class="blockquote mb-0">
             <p>{{ comment.comment }}</p>
-            <footer class="footer" style="font-size: 12px; text-align: right;">Created on: </footer>
+            <footer class="footer" style="font-size: 12px; text-align: right;">{{ comment.created_at }}</footer>
           </blockquote>
         </div>
       </div>

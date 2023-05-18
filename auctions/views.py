@@ -23,6 +23,7 @@ def index(request):
 
     return multiple_listings(request, context)
 
+# Function that takes in a set of listings and a page title which then renders it to the index page
 def multiple_listings(request, context):
     for listing in context['listings']:
         if not listing.image_url:
@@ -30,17 +31,20 @@ def multiple_listings(request, context):
 
     return render(request, "auctions/index.html", context)
 
+# View for the categories page
 def categories(request):
+    # Generate the list of categories and renders categories.html to list them
     all_categories = Category.objects.all()
     return render(request, "auctions/categories.html", {
         'categories': all_categories
     })
 
+# View for when a category is selected
 def category_name(request, category_id):
 
-    category = Category.objects.get(pk=category_id)
-    listings = Listing.objects.filter(category_id=category.id)
-    listings = listings.filter(active=True)
+    category = Category.objects.get(pk=category_id) # Get the category name
+    listings = Listing.objects.filter(category_id=category.id) # Filter listings within this category
+    listings = listings.filter(active=True) # Filter active listings within the category
     
     context = {
         'title': category.name,
@@ -49,86 +53,96 @@ def category_name(request, category_id):
 
     return multiple_listings(request, context)
 
+# View for a user's watchlist
 @login_required
 def watchlist(request):
-    user = User.objects.get(pk=request.user.id)
-    watchlist = user.watchlist.all()
+    user = User.objects.get(pk=request.user.id) # Get user from the User Model
+    watchlist = user.watchlist.all() # Get user's watchlist
+
     context = {
         'title': 'Watchlist',
         'listings': get_max_bids(watchlist)
     }
+
     return multiple_listings(request, context)
 
+# View for the listings page
 def listing_page(request, listing_id):
-    listing = Listing.objects.get(pk=listing_id)
-    user_id = request.user.id
-    if request.method == 'GET':
 
-        max_bid = Bid.objects.filter(listing=listing_id).aggregate(Max('bid'))['bid__max']
+    listing = Listing.objects.get(pk=listing_id) # Get listing from id
+    user_id = request.user.id # Get user id
+
+    if request.method == 'GET':
+        
+        max_bid = Bid.objects.filter(listing=listing_id).aggregate(Max('bid'))['bid__max'] # Get the maximum bid for that listing
+
+        # Create the context to be sent to listing_page.html
         context = {
                 'listing': Listing.objects.get(pk=listing_id),
                 'max_bid': max_bid,
                 'user_id': user_id,
                 'comments': Comment.objects.filter(listing=listing)
             }
+        
+        if user_id: # If a user is logged in
+            user = User.objects.get(pk=request.user.id) # Get the user instance from User model
 
-        if user_id:
-            user = User.objects.get(pk=request.user.id)
-
-            if listing.seller.id == user.id:
+            if listing.seller.id == user.id: # If the user is the seller, they are given the option to close the bids
                 listing_manipulation = 'Close auction'
-            elif listing in user.watchlist.all():
+            elif listing in user.watchlist.all(): # If the listing is in the user's watchlist, they are given the option to remove it
                 listing_manipulation = 'Remove from watchlist'
-            else:
-                listing_manipulation = 'Add to watchlist'
+            else: # Else the listing is not on the user's watchlist so they are given the option to add it
+                listing_manipulation = 'Add to watchlist' 
             
-            context['listing_manipulation'] = listing_manipulation
+            context['listing_manipulation'] = listing_manipulation # Save the relavent listing manipulation option to the context
 
             if listing.active:
-                context['comment_form'] = CommentForm()
+                context['comment_form'] = CommentForm() # If the listing is active add a comment form to the context
             
-            if (listing.seller != user):
+            if (listing.seller != user): 
                 form = modelform_factory(Bid, form=BidForm, widgets={'bid': forms.NumberInput(attrs={'placeholder': 'Bid', 'size': '8', 'min': max_bid + 0.01})})
-
-                context['bid_form'] = form
-    
+                context['bid_form'] = form # If the seller is not the same as the user add a bid form to the context
+        # Return the rendered page to the user
         return render(request, "auctions/listing_page.html", context)
 
-    else:
+    else: # If the request method is POST
+        # Get the form data from the BidForm and CommentForm
         bid_f = BidForm(request.POST)
         comment_f = CommentForm(request.POST)
 
-        if 'bid' in request.POST :
+        if 'bid' in request.POST : # If the request contained a bid then update Bid model with the new data
             new_bid = bid_f.save(commit=False)
             new_bid.listing = listing
             new_bid.user = User.objects.get(pk=user_id)
             new_bid.save()
-        elif 'comment' in request.POST:
+
+        elif 'comment' in request.POST: # If the request contained a comment then update Comment model with the new data
             new_comment = comment_f.save(commit=False)
             new_comment.listing = listing
             new_comment.user = User.objects.get(pk=user_id)
             new_comment.save()
-        else:
+        else: # Otherwise return an error
             return render(request, 'auctions/error.html')
-
+        # Redirect the user to the listing page
         return HttpResponseRedirect(reverse('listing_page', args=(listing_id,)))
 
+# View for adding an item to watchlist
 @login_required
 def add_to_watchlist(request, listing_id, listing_manipulation):
 
-    listing = Listing.objects.get(pk=listing_id)
-    if listing_manipulation == 'Add to watchlist':
+    listing = Listing.objects.get(pk=listing_id) # Get the listing object from the Listing model
+    if listing_manipulation == 'Add to watchlist': # If the user selected the 'Add to watchlist' option then add the user to the listing watchlist field
         listing.watchlist.add(User.objects.get(pk=request.user.id))
         listing.save()
-    elif listing_manipulation == 'Remove from watchlist':
+    elif listing_manipulation == 'Remove from watchlist': # If the user selected the 'Remove from watchlist' option then remove the user to the listing watchlist field
         listing.watchlist.remove(User.objects.get(pk=request.user.id))
-    else:
+    else: # Otherwise the user selected the 'Close bid' option so update the active status of the listing to False and add the user with the highest bid to the 'winner' field
         listing.active = False
         max_bid_value = Bid.objects.filter(listing=listing_id).aggregate(Max('bid'))['bid__max']
         max_bid = Bid.objects.get(listing=listing, bid=max_bid_value)
         listing.winner = max_bid.user 
         listing.save()
-    
+    # Redirect user to listing page
     return HttpResponseRedirect(reverse('listing_page', args=(listing_id,)))
 
 
@@ -151,6 +165,7 @@ def create_listing(request):
             new_listing.seller = user
 
             if category_f.is_valid() and category_f.cleaned_data['name']:
+                # Create or store the selected category
                 new_category, created = Category.objects.get_or_create(name=category_f.cleaned_data['name'])
                 new_category.save()
                 new_listing.category = new_category

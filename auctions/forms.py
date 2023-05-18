@@ -25,7 +25,7 @@ class BidForm(forms.ModelForm):
         widgets = {
             'bid': forms.NumberInput(attrs={'placeholder': 'Initial bid', 'size': '8'})
         }
-
+# Model form for user to create a Category
 class CategoryForm(forms.ModelForm):
     class Meta:
         model = Category
@@ -34,6 +34,7 @@ class CategoryForm(forms.ModelForm):
             'name': forms.TextInput(attrs={'placeholder': 'Category'}),
         }
 
+# Model form for user to create a Comment
 class CommentForm(forms.ModelForm):
     class Meta:
         model = Comment
